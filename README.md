@@ -12,6 +12,15 @@ The project is implemented in Python and makes use of various libraries such as 
 
 ## Getting Started
 
-### Prerequisites
+## Prerequisites
 - Python 3.6 or later
 - pip/conda
+
+## Directories
+- import (data import, translation, html-tag removing, stopword removing, punctuation removing, duplicates removing)
+- skills (creating skill list [API + Other Skills])
+- preprocessing (other stopwords removing, skill filter, job filter)
+- analysis (currently: lda, lsa, token_freuncies)
+- visualization (WorkCloud pictures for word frequencies)
+- user interface (under development)
+- not_in_use (code which is currently out of usage)
