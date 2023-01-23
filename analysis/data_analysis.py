@@ -3,11 +3,15 @@ import pandas as pd
 from nltk import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
-from preprocessing.data_preprocessing import job_data, composite_skills
 
-# display options for dataframes
+from analysis.lda import analysis_with_lda
+from analysis.token_freuencies import get_token_frequencies
+from preprocessing.data_preprocessing import job_data, composite_skills
 from visualization.data_visualization import visualization
 
+
+# TODO: remove
+# display options for dataframes
 pd.set_option('display.max_columns', 20)
 pd.set_option('display.width', 2000)
 
@@ -23,15 +27,14 @@ pd.set_option('display.width', 2000)
 
 # initialize lemmatizer
 lemmatizer = WordNetLemmatizer()
-def lemmatize_text(text):
-    return ' '.join([lemmatizer.lemmatize(word) for word in text.split()])
+#def lemmatize_text(text):
+#    return ' '.join([lemmatizer.lemmatize(word) for word in text.split()])
 
 def lemmatize_text(word):
     if word in composite_skills:
         return word
     else:
         return lemmatizer.lemmatize(word)
-
 
 
 # performing lemmatization for dataset
@@ -50,115 +53,30 @@ year_dfs = {}
 for year, group in grouped:
     year_dfs[year] = group.copy()
 
+# analysis based on year
 for year in year_dfs:
+    # TODO: remove
     print(year)
     print(year_dfs[year])
 
-
     # defining the number of topics
-    n_topics = 2
+    n_topics = 3
+
     # 1. Latent Dirichlet Allocation (LDA):
-    print('\n1. Latent Dirichlet Allocation (LDA):')
-
-    # Vectorize the text using TF-IDF
-    vectorizer = TfidfVectorizer(max_df=1, min_df=1, stop_words='english')
-    X = vectorizer.fit_transform(year_dfs[year]['descriptionLemmatized'])
-
-    # performing topic modeling using LDA
-    lda = LatentDirichletAllocation(n_components=n_topics, max_iter=10, learning_method='batch', random_state=0)
-    lda.fit(X)
-
-    # output of topics and words for LDA
-    n_top_words = 15
-    feature_names = vectorizer.get_feature_names_out()
-    for topic_idx, topic in enumerate(lda.components_):
-        print("Topic ", topic_idx, ":")
-        print(" ".join([feature_names[i] for i in topic.argsort()[:-n_top_words - 1:-1]]))
-
-    #################################TEST############################################
-    n_topics = 5
+    analysis_with_lda(year_dfs, year, 'descriptionLemmatized', n_topics)
 
     # 2. Latent Semantic Analysis (LSA):
-    print('\n2. Latent Semantic Analysis (LSA):')
-    from sklearn.decomposition import TruncatedSVD
-    from sklearn.feature_extraction.text import TfidfVectorizer
+    analysis_with_lda(year_dfs, year, 'descriptionLemmatized', n_topics)
 
-    # Create a Tf-idf vectorizer
-    vectorizer = TfidfVectorizer(stop_words='english')
-
-    # Fit the vectorizer on the text data
-    X = vectorizer.fit_transform(year_dfs[year])
-
-    # Perform SVD on the Tf-idf matrix
-    svd = TruncatedSVD(n_components=n_topics)
-    X_reduced = svd.fit_transform(X)
-
-    # Extract the top words for each topic
-    top_words = vectorizer.get_feature_names_out()
-
-    # Print the top words for each topic
-    for topic_idx, topic in enumerate(svd.components_):
-        print("Topic ", topic_idx, ":")
-        print(" ".join([top_words[i] for i in topic.argsort()[:-n_top_words - 1:-1]]))
-
-    # 3. Non-Negative Matrix Factorization (NMF):
-    print('\n3. Non-Negative Matrix Factorization (NMF):')
-    from sklearn.decomposition import NMF
-    from sklearn.feature_extraction.text import TfidfVectorizer
-
-    # Create a Tf-idf vectorizer
-    vectorizer = TfidfVectorizer(stop_words='english')
-
-    # Fit the vectorizer on the text data
-    X = vectorizer.fit_transform(job_data['descriptionLemmatized'])
-
-    # Perform NMF on the Tf-idf matrix
-    nmf = NMF(n_components=n_topics)
-    X_reduced = nmf.fit_transform(X)
-
-    # Extract the top words for each topic
-    top_words = vectorizer.get_feature_names_out()
-
-    # Print the top words for each topic
-    for topic_idx, topic in enumerate(nmf.components_):
-        print("Topic ", topic_idx, ":")
-        print(" ".join([top_words[i] for i in topic.argsort()[:-n_top_words - 1:-1]]))
+    # initialize CountVectorizer
+    count_vectorizer = CountVectorizer()
+    # convert the text data into a matrix of token frequencies
+    X = count_vectorizer.fit_transform(year_dfs[year]['descriptionLemmatized'])
 
     # 3. Token frequencies:
-    print('\n3. Token frequencies:')
-    # initialize countVectorizer
-    vectorizer2 = CountVectorizer()
+    get_token_frequencies(count_vectorizer, X)
 
-    # convert the text data into a matrix of token frequencies
-    X = vectorizer2.fit_transform(year_dfs[year]['descriptionLemmatized'])
-
-    # Berechnen der Token-Häufigkeiten
-    token_counts = X.sum(axis=0).A1
-
-    # Die 10 häufigsten Token ausgeben
-    most_common_tokens = [vectorizer2.get_feature_names_out()[i] for i in token_counts.argsort()[-500:]]
-    print(most_common_tokens)
-
-    # visualization
-    #data_string = ' '.join(year_dfs[year]['descriptionLemmatized'].tolist())
-    #print(year_dfs[year]['descriptionLemmatized'])
-    #print(data_string)
-    #visualization(year, year_dfs[year]['descriptionLemmatized'].to_string())
-
-
-
-
-    # Obtain the token counts in the form of a sparse matrix
-    token_counts2 = X.toarray()
-
-    # Extract the vocabulary of tokens
-    vocab = vectorizer2.get_feature_names_out()
-
-    # Create a dictionary to store the token counts
-    token_counts_dict = dict(zip(vocab, token_counts2.sum(axis=0)))
-
-    print(token_counts_dict)
-
-    visualization(year, token_counts_dict)
+    # 4. Visualization
+    visualization(count_vectorizer, X, year)
 
 

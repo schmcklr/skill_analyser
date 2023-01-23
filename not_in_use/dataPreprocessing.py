@@ -1,5 +1,4 @@
 # preprocessing data
-from bs4 import BeautifulSoup
 from dataImport import job_data
 
 # user info
